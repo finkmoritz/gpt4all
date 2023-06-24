@@ -5,6 +5,7 @@ import 'package:gpt4all/src/llmodel_prompt_config.dart';
 import 'package:gpt4all/src/llmodel_error.dart';
 import 'package:gpt4all/src/llmodel_library.dart';
 import 'package:gpt4all/src/llmodel_prompt_context.dart';
+import 'package:gpt4all/src/llmodel_utils.dart';
 
 class LLModel {
   bool _isLoaded = false;
@@ -39,14 +40,14 @@ class LLModel {
       LLModelLibrary.recalculateCallback = callback;
 
   /// Load the model (.bin) from the [modelPath] and loads required libraries
-  /// (.dll/.dylib/.so) from the [librarySearchPath] folder.
+  /// (.dll/.dylib/.so) from the [librarySearchPath] folder. The
+  /// [LLModelPromptConfig] can be used to optimize the model invocation.
   ///
   /// This method must be called before any other interaction with the [LLModel].
   ///
   /// Make sure to call the [destroy] method once the work is performed.
   Future<void> load({
     required final String modelPath,
-    required final String librarySearchPath,
     LLModelPromptConfig? promptConfig,
   }) async {
     promptConfig ??= LLModelPromptConfig();
@@ -73,8 +74,10 @@ class LLModel {
         ..repeat_last_n = promptConfig.repeatLastN
         ..context_erase = promptConfig.contextErase;
 
+      final String librarySearchPath = await LLModelUtils.copySourcesToTmpFolder();
+
       _library = LLModelLibrary(
-        pathToLibrary: '$librarySearchPath/libllmodel${_getFileSuffix()}',
+        pathToLibrary: '$librarySearchPath/libllmodel${LLModelUtils.getFileSuffix()}',
       );
 
       _library.setImplementationSearchPath(
@@ -111,20 +114,7 @@ class LLModel {
     }
   }
 
-  String _getFileSuffix() {
-    if (Platform.isWindows) {
-      return '.dll';
-    } else if (Platform.isMacOS) {
-      return '.dylib';
-    } else if (Platform.isLinux) {
-      return '.so';
-    } else {
-      throw Exception('Unsupported device');
-    }
-  }
-
-  /// Generate a response to the [prompt] using the model. The
-  /// [LLModelPromptConfig] can be used to optimize the model invocation.
+  /// Generate a response to the [prompt] using the model.
   Future<void> generate({
     required String prompt,
   }) async {

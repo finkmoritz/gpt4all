@@ -9,9 +9,6 @@ void main() async {
     await model.load(
       // Path to the downloaded model file (*.bin)
       modelPath: '/some/path/to/ggml-gpt4all-j-v1.3-groovy.bin',
-      // Path to the library folder including compiled *.dll (Windows), *.dylib (Mac) or
-      // *.so (Linux) files
-      librarySearchPath: '/some/path/gpt4all-backend/build',
       // Optionally fine-tune the default configuration
       promptConfig: LLModelPromptConfig()..nPredict = 256,
     );
