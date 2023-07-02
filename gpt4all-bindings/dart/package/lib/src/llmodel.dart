@@ -29,18 +29,18 @@ class LLModel {
   ///
   /// A [tokenId] of -1 indicates the string is an error string.
   static void setResponseCallback(
-          bool Function(int tokenId, String response) callback) =>
+      bool Function(int tokenId, String response) callback) =>
       LLModelLibrary.responseCallback = callback;
 
   /// Define a [callback] function for recalculation, which returns a bool
   /// indicating whether the model should keep processing based on whether
   /// the model [isRecalculating] the context.
   static void setRecalculateCallback(
-          bool Function(bool isRecalculating) callback) =>
+      bool Function(bool isRecalculating) callback) =>
       LLModelLibrary.recalculateCallback = callback;
 
-  /// Load the model (.bin) from the [modelPath] and loads required libraries
-  /// (.dll/.dylib/.so) from the [librarySearchPath] folder. The
+  /// Load the model (.bin) from the [modelPath] and (optionally) loads required
+  /// libraries (.dll/.dylib/.so) from the [librarySearchPath] folder. The
   /// [LLModelPromptConfig] can be used to optimize the model invocation.
   ///
   /// This method must be called before any other interaction with the [LLModel].
@@ -48,8 +48,10 @@ class LLModel {
   /// Make sure to call the [destroy] method once the work is performed.
   Future<void> load({
     required final String modelPath,
+    String? librarySearchPath,
     LLModelPromptConfig? promptConfig,
   }) async {
+    librarySearchPath ??= await LLModelUtils.copySourcesToTmpFolder();
     promptConfig ??= LLModelPromptConfig();
 
     final ffi.Pointer<LLModelError> error = calloc<LLModelError>();
@@ -74,10 +76,9 @@ class LLModel {
         ..repeat_last_n = promptConfig.repeatLastN
         ..context_erase = promptConfig.contextErase;
 
-      final String librarySearchPath = await LLModelUtils.copySourcesToTmpFolder();
-
       _library = LLModelLibrary(
-        pathToLibrary: '$librarySearchPath/libllmodel${LLModelUtils.getFileSuffix()}',
+        pathToLibrary: '$librarySearchPath/libllmodel${LLModelUtils
+            .getFileSuffix()}',
       );
 
       _library.setImplementationSearchPath(
